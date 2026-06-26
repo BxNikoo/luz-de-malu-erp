@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luz de Malu ERP - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>Luz de Malu</h2>
+            <p>Acesse o painel de gestão interna</p>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" required placeholder="exemplo@luzdemalu.com.br">
+                </div>
+                
+                <div class="input-group">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="btn-login">Entrar no Sistema</button>
+            </form>
+            <div id="mensagemErro" class="error-msg"></div>
+        </div>
+    </div>
+
+    <script>
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const mensagemErro = document.getElementById('mensagemErro');
+            
+            mensagemErro.innerText = '';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.erro || 'Falha ao fazer login');
+                }
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('usuario', JSON.stringify(data.usuario));
+
+                 window.location.href = '/dashboard.html';
+                
+            } catch (err) {
+                mensagemErro.innerText = err.message;
+            }
+        });
+    </script>
+</body>
+</html>

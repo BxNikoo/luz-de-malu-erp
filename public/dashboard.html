@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luz de Malu ERP - Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            width: 250px; position: fixed; left: 0; top: 0; height: 100vh;
+            background-color: #2b2b2b; color: white; padding: 20px;
+            box-sizing: border-box; z-index: 1000;
+        }
+        .sidebar h2 { font-size: 1.4rem; margin-bottom: 30px; color: #dfbfa1; text-align: center; }
+        .nav-btn {
+            background: none; color: #ccc; border: none; padding: 12px;
+            text-align: left; border-radius: 6px; cursor: pointer;
+            font-size: 0.95rem; width: 100%; transition: all 0.2s;
+        }
+        .nav-btn:hover { background: #3a3a3a; color: white; }
+        .nav-btn.active { background: #444; color: white; }
+        .main-layout {
+            margin-left: 250px; padding: 40px; box-sizing: border-box;
+            min-height: 100vh; background-color: #f9f9f9; font-family: sans-serif;
+        }
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1100px; margin: 0 auto 30px auto;
+            border-bottom: 1px solid #eee; padding-bottom: 20px;
+        }
+        .page-header h1 { margin: 0; font-size: 1.8rem; color: #333; }
+        .conteudo { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 25px; }
+        .aba-sistema { display: none; }
+        .aba-sistema.ativa { display: block; }
+        .card { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card h2 { color: #5c4033; margin: 0 0 5px 0; font-size: 1.1rem; }
+        .card h3 { color: #5c4033; margin: 0 0 15px 0; font-size: 1rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .metrica-card {
+            background: white; padding: 20px; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center;
+        }
+        .metrica-card h3 { color: #888; margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .metrica-valor { font-size: 1.9rem; font-weight: bold; margin: 10px 0 0 0; }
+        label { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; display: block; color: #444; }
+        input[type="text"], input[type="number"], input[type="date"], select {
+            padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+            width: 100%; box-sizing: border-box; font-size: 0.9rem;
+        }
+        input:focus, select:focus { outline: none; border-color: #8c7365; box-shadow: 0 0 0 2px rgba(140,115,101,0.15); }
+        .btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        .btn-primary { background: #5c4033; color: white; }
+        .btn-primary:hover { background: #4a3028; }
+        .btn-success { background: #2e7d32; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-full { width: 100%; padding: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f5f5f5; padding: 12px; text-align: left; color: #5c4033; font-size: 0.88rem; border-bottom: 2px solid #ddd; }
+        td { padding: 11px 12px; border-bottom: 1px solid #f0eae4; font-size: 0.9rem; }
+        tr:last-child td { border-bottom: none; }
+        .flex-row { display: flex; gap: 12px; align-items: flex-end; }
+        .flex-col { display: flex; flex-direction: column; gap: 6px; }
+        .form-grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; }
+        .receita-box { background: #fdfbf7; padding: 15px; border-radius: 8px; border: 1px solid #f1ece1; }
+        #listaInsumosDaReceita { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow-y: auto; }
+        #listaInsumosDaReceita li {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; background: white; border: 1px solid #eee;
+            border-radius: 6px; margin-bottom: 6px; font-size: 0.88rem;
+        }
+        .tag-verde { color: #2e7d32; font-weight: bold; }
+        .tag-vermelho { color: #dc3545; font-weight: bold; }
+        .despesa-row td:last-child { color: #dc3545; font-weight: bold; }
+        .nav-btn i, .nav-btn svg {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 6px;
+            display: inline-block;
+        }
+        .btn i, .btn svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin-right: 4px;
+            display: inline-block;
+        }
+    </style>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+    <h2><i data-lucide="flame"></i> Luz de Malu</h2>
+    <nav style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="nav-btn active" onclick="mudarAba('dashboard')"><i data-lucide="layout-dashboard"></i> Dashboard</button>
+        <button class="nav-btn" onclick="mudarAba('produtos')"><i data-lucide="flame"></i> Produtos & Receitas</button>
+        <button class="nav-btn" onclick="mudarAba('estoque')"><i data-lucide="archive"></i> Estoque</button>
+        <button class="nav-btn" onclick="mudarAba('caixa')"><i data-lucide="wallet"></i> Caixa</button>
+    </nav>
+</aside>
+
+<!-- ===== CONTEÚDO PRINCIPAL ===== -->
+<main class="main-layout">
+    <div class="page-header">
+        <h1>Luz de Malu – Painel de Gestão</h1>
+        <button onclick="logout()" class="btn btn-danger">Sair</button>
+    </div>
+
+    <div class="conteudo">
+
+        <!-- ================================================ -->
+        <!-- ABA: DASHBOARD / VENDAS                          -->
+        <!-- ================================================ -->
+        <section id="aba-dashboard" class="aba-sistema ativa">
+
+            <div class="grid-3">
+                <div class="metrica-card">
+                    <h3>Total de Vendas</h3>
+                    <p id="contagemGeral" class="metrica-valor" style="color:#2e7d32;">0 vendas</p>
+                </div>
+                <div class="metrica-card">
+                    <h3>Vendas — Últimos 15 Dias</h3>
+                    <p id="contagem15Dias" class="metrica-valor" style="color:#1565c0;">0 vendas</p>
+                </div>
+                <div class="metrica-card">
+                    <h3>Vendas — Últimos 30 Dias</h3>
+                    <p id="contagem30Dias" class="metrica-valor" style="color:#e65100;">0 vendas</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Registrar Nova Venda</h2>
+                <p style="color:#888; font-size:0.88rem; margin:5px 0 18px 0;">Selecione os produtos e confirme a venda para dar baixa automática no estoque.</p>
+                <form id="formVenda" onsubmit="salvarVenda(event)">
+                    <div id="listaItensVenda">
+                        <div class="item-venda-linha flex-row" style="margin-bottom:10px;">
+                            <div class="flex-col" style="flex:3;">
+                                <label>Produto:</label>
+                                <select class="select-produto-venda" required>
+                                    <option value="">Carregando produtos...</option>
+                                </select>
+                            </div>
+                            <div class="flex-col" style="flex:1;">
+                                <label>Quantidade:</label>
+                                <input type="number" class="qtd-produto-venda" min="1" value="1" required>
+                            </div>
+                            <button type="button" onclick="removerLinhaVenda(this)" class="btn btn-danger">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="adicionarLinhaVenda()" class="btn btn-secondary" style="margin-top:8px;">+ Adicionar Produto</button>
+                    <hr style="border:0; border-top:1px solid #eee; margin:18px 0;">
+                    <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check-circle"></i> Lançar Venda Concluída</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Histórico Recente de Vendas</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Produtos Vendidos</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaHistoricoVendas">
+                        <tr><td colspan="3" style="color:#999;">Nenhuma venda registrada ainda.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- ================================================ -->
+        <!-- ABA: PRODUTOS & RECEITAS                         -->
+        <!-- ================================================ -->
+        <section id="aba-produtos" class="aba-sistema">
+
+            <div class="card">
+                <h2 id="tituloFormProduto"><i data-lucide="flame"></i> Cadastrar Nova Vela</h2>
+                <div style="display:flex; gap:30px; flex-wrap:wrap; margin-top:18px;">
+
+                    <!-- Formulário de cadastro/edição da vela -->
+                    <form id="formProduto" onsubmit="salvarProduto(event)" style="flex:1; min-width:280px;">
+                        <input type="hidden" id="produtoId">
+                        <h3 style="color:#888; font-weight:normal; font-size:0.9rem; margin-bottom:15px;">1. Informações da Vela</h3>
+                        <div class="flex-col" style="margin-bottom:14px;">
+                            <label>Nome da Vela:</label>
+                            <input type="text" id="produtoNome" placeholder="Ex: Vela Aromática Lavanda 140g" required>
+                        </div>
+                        <div class="flex-col" style="margin-bottom:18px;">
+                            <label>Preço de Venda (R$):</label>
+                            <input type="number" id="produtoPrecoVenda" step="0.01" min="0" placeholder="Ex: 35.00" required>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button type="submit" class="btn btn-primary" style="flex:2;">Salvar Vela</button>
+                            <button type="button" onclick="resetarFormProduto()" class="btn btn-secondary" style="flex:1;">Limpar</button>
+                        </div>
+                    </form>
+
+                    <!-- Seção de receitas -->
+                    <div style="flex:1; min-width:320px; border-left:1px solid #eee; padding-left:25px;">
+                        <h3 style="color:#5c4033; margin-bottom:15px;"><i data-lucide="scroll-text"></i> Montar Receita da Vela</h3>
+                        <div class="receita-box">
+                            <div class="flex-col" style="margin-bottom:14px;">
+                                <label>Selecione a Vela:</label>
+                                <select id="receitaProdutoSelect" onchange="carregarItensReceita()">
+                                    <option value="">-- Selecione uma Vela --</option>
+                                </select>
+                            </div>
+                            <form id="formReceita" onsubmit="salvarReceita(event)" class="flex-row" style="border-top:1px dashed #ddd; padding-top:14px;">
+                                <div class="flex-col" style="flex:2;">
+                                    <label>Insumo:</label>
+                                    <select id="receitaInsumoSelect" required>
+                                        <option value="">-- Escolha --</option>
+                                    </select>
+                                </div>
+                                <div class="flex-col" style="flex:1;">
+                                    <label>Qtd Usada:</label>
+                                    <input type="number" id="receitaQuantidade" step="0.01" min="0" required>
+                                </div>
+                                <button type="submit" class="btn btn-success">➕</button>
+                            </form>
+                        </div>
+                        <h4 style="margin:16px 0 10px 0; color:#888; font-size:0.88rem;">Insumos nesta receita:</h4>
+                        <ul id="listaInsumosDaReceita">
+                            <li style="color:#999; font-style:italic; border:none !important; background:transparent !important;">Selecione uma vela acima...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela de velas cadastradas -->
+            <div class="card">
+                <h3>Velas Cadastradas</h3>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Preço de Venda</th>
+                                <th>Custo de Produção</th>
+                                <th>Qtd em Estoque</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaProdutosCompleta">
+                            <tr><td colspan="5" style="color:#999;">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Lançar produção -->
+            <div class="card">
+                <h2>Registrar Produção de Velas</h2>
+                <p style="color:#888; font-size:0.88rem; margin:5px 0 18px 0;">Dá baixa automática nos insumos e adiciona unidades ao estoque do produto final.</p>
+                <form id="producaoForm" onsubmit="lancarProducao(event)" class="flex-row">
+                    <div class="flex-col" style="flex:2;">
+                        <label>Selecione o Produto a Produzir:</label>
+                        <select id="produtoSelect" required>
+                            <option value="">-- Selecione uma Vela --</option>
+                        </select>
+                    </div>
+                    <div class="flex-col" style="flex:1;">
+                        <label>Quantidade Produzida:</label>
+                        <input type="number" id="quantidadeProducao" min="1" placeholder="Ex: 10" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="white-space:nowrap;"><i data-lucide="factory"></i> Lançar no Estoque</button>
+                </form>
+            </div>
+
+        </section>
+
+        <!-- ================================================ -->
+        <!-- ABA: ESTOQUE                                     -->
+        <!-- ================================================ -->
+        <section id="aba-estoque" class="aba-sistema">
+
+            <div class="card">
+                <h2>Estoque de Velas Prontas</h2>
+                <p style="color:#888; font-size:0.88rem; margin:5px 0 18px 0;">Produtos finais disponíveis no ateliê prontos para a venda.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vela Aromática</th>
+                            <th>Preço de Venda</th>
+                            <th>Quantidade Disponível</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaEstoqueVelasProntas">
+                        <tr><td colspan="3" style="color:#999;">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Insumos & Matérias-Primas</h2>
+                <p style="color:#888; font-size:0.88rem; margin:5px 0 18px 0;">Nível atual de matérias-primas no almoxarifado.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Insumo</th>
+                            <th>Quantidade em Estoque</th>
+                            <th>Preço Unitário</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaInsumosCompleta">
+                        <tr><td colspan="4" style="color:#999;">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2 id="tituloFormInsumo">Cadastrar / Editar Insumo</h2>
+                <form id="insumoForm" onsubmit="salvarInsumoNovo(event)" style="margin-top:18px;">
+                    <input type="hidden" id="insumoId">
+                    <input type="hidden" id="insumoNomeOriginal">
+                    <div class="form-grid-3" style="margin-bottom:14px;">
+                        <div class="flex-col">
+                            <label>Nome do Insumo:</label>
+                            <input type="text" id="insumoNome" placeholder="Ex: Cera de Coco" required>
+                        </div>
+                        <div class="flex-col">
+                            <label>Quantidade:</label>
+                            <input type="number" id="insumoQuantidade" step="0.01" min="0" placeholder="Ex: 500" required>
+                        </div>
+                        <div class="flex-col">
+                            <label>Unidade:</label>
+                            <select id="insumoUnidade" required>
+                                <option value="g">Gramas (g)</option>
+                                <option value="kg">Quilos (kg)</option>
+                                <option value="ml">Mililitros (ml)</option>
+                                <option value="un">Unidade (un)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex-col" style="margin-bottom:18px;">
+                        <label for="insumoPreco">Preço Total Pago (R$):</label>
+                        <input type="number" id="insumoPreco" step="0.01" min="0" placeholder="Ex: 45.00" required>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit" class="btn btn-primary" style="flex:3;">Salvar Insumo</button>
+                        <button type="button" onclick="resetarFormInsumo()" class="btn btn-secondary" style="flex:1;">Limpar</button>
+                    </div>
+                </form>
+            </div>
+
+        </section>
+
+        <!-- ================================================ -->
+        <!-- ABA: CAIXA                                       -->
+        <!-- ================================================ -->
+        <section id="aba-caixa" class="aba-sistema">
+
+            <div class="grid-3">
+                <div class="metrica-card" style="border-top:4px solid #28a745;">
+                    <h3>Faturamento Geral</h3>
+                    <p id="caixaFaturamentoGeral" class="metrica-valor tag-verde">R$ 0,00</p>
+                </div>
+                <div class="metrica-card" style="border-top:4px solid #1565c0;">
+                    <h3>Últimos 30 Dias</h3>
+                    <p id="caixaFaturamento30" class="metrica-valor" style="color:#1565c0;">R$ 0,00</p>
+                </div>
+                <div class="metrica-card" style="border-top:4px solid #e65100;">
+                    <h3>Últimos 15 Dias</h3>
+                    <p id="caixaFaturamento15" class="metrica-valor" style="color:#e65100;">R$ 0,00</p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <!-- Top 3 mais vendidos -->
+                <div class="card">
+                    <h3><i data-lucide="trophy"></i> Top 3 Velas Mais Vendidas</h3>
+                    <table>
+                        <tbody id="tabelaTop3">
+                            <tr><td colspan="2" style="color:#999;">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Registrar despesa -->
+                <div class="card">
+                    <h3><i data-lucide="receipt"></i> Registrar Nova Despesa</h3>
+                    <form id="formDespesa" onsubmit="salvarDespesa(event)">
+                        <div class="flex-col" style="margin-bottom:12px;">
+                            <label>Descrição:</label>
+                            <input type="text" id="despesaDescricao" placeholder="Ex: Compra de 5kg de Cera" required>
+                        </div>
+                        <div class="flex-col" style="margin-bottom:12px;">
+                            <label>Valor (R$):</label>
+                            <input type="number" id="despesaValor" step="0.01" min="0" placeholder="Ex: 120.50" required>
+                        </div>
+                        <div class="flex-col" style="margin-bottom:18px;">
+                            <label>Data:</label>
+                            <input type="date" id="despesaData" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">Salvar Despesa</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabela de despesas do mês -->
+            <div class="card">
+                <h3><i data-lucide="calendar"></i> Despesas do Mês Atual</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaDespesas">
+                        <tr><td colspan="4" style="color:#999;">Nenhuma despesa registrada este mês.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+             <h3><i data-lucide="bar-chart-2"></i> Faturamento vs Despesas — Mês Atual</h3>
+             <canvas id="graficoCaixa" height="100"></canvas>
+            </div>
+        </section>
+
+    </div><!-- /conteudo -->
+</main>
+
+<script>
+
+// NAVEGAÇÃO ENTRE ABAS
+
+function mudarAba(nomeAba) {
+    document.querySelectorAll('.aba-sistema').forEach(s => s.classList.remove('ativa'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+    const secao = document.getElementById(`aba-${nomeAba}`);
+    if (secao) secao.classList.add('ativa');
+
+    const btn = document.querySelector(`.nav-btn[onclick="mudarAba('${nomeAba}')"]`);
+    if (btn) btn.classList.add('active');
+
+    window.scrollTo(0, 0);
+
+    // Recarrega dados ao trocar de aba
+    if (nomeAba === 'dashboard') carregarDadosDashboard();
+    if (nomeAba === 'caixa') carregarDadosCaixa();
+}
+
+// LOGOUT
+
+function logout() {
+    localStorage.removeItem('token');
+    window.location.href = 'index.html';
+}
+
+// HELPERS
+
+function fmtMoeda(valor) {
+    return `R$ ${parseFloat(valor || 0).toFixed(2).replace('.', ',')}`;
+}
+
+function exibirUnidade(un) {
+    const mapa = { g: 'g', ml: 'ml', kg: 'kg', un: 'un', unidade: 'un' };
+    return mapa[un] || un;
+}
+
+function exibirPreco(preco, unidade) {
+    if (unidade === 'g') return `${fmtMoeda(parseFloat(preco) * 1000)} / kg`;
+    return `${fmtMoeda(preco)} / ${exibirUnidade(unidade)}`;
+}
+
+// DASHBOARD - CARREGAR DADOS
+
+async function carregarDadosDashboard() {
+    try {
+        const res = await fetch('/api/dashboard/vendas');
+        if (!res.ok) throw new Error('Erro ao buscar dados');
+        const d = await res.json();
+
+        const fmtVendas = (n) => `${parseInt(n || 0)} ${parseInt(n || 0) === 1 ? 'venda' : 'vendas'}`;
+        document.getElementById('contagemGeral').innerText  = fmtVendas(d.contagemGeral);
+        document.getElementById('contagem15Dias').innerText = fmtVendas(d.contagem15);
+        document.getElementById('contagem30Dias').innerText = fmtVendas(d.contagem30);
+
+        const tbody = document.getElementById('tabelaHistoricoVendas');
+        if (!tbody) return;
+        if (!d.historico || d.historico.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="color:#999;">Nenhuma venda registrada ainda.</td></tr>`;
+        } else {
+            tbody.innerHTML = d.historico.map(v => `
+    <tr>
+        <td>${new Date(v.data_venda).toLocaleString('pt-BR')}</td>
+        <td>${v.produtos}</td>
+        <td class="tag-verde">${fmtMoeda(v.valor_total)}</td>
+        <td><button class="btn btn-danger" onclick="excluirVenda(${v.id})" style="padding:4px 8px; font-size:0.8rem;"><i data-lucide="trash-2"></i></button></td>
+    </tr>
+        `).join('');
+        lucide.createIcons();
+        }
+    } catch (err) {
+        console.error('Erro no dashboard:', err);
+    }
+}
+
+// VENDAS - FORMULÁRIO
+
+function adicionarLinhaVenda() {
+    const lista = document.getElementById('listaItensVenda');
+    const div = document.createElement('div');
+    div.className = 'item-venda-linha flex-row';
+    div.style.marginBottom = '10px';
+    div.innerHTML = `
+        <div class="flex-col" style="flex:3;">
+            <label>Produto:</label>
+            <select class="select-produto-venda" required>
+                <option value="">-- Selecione a Vela --</option>
+            </select>
+        </div>
+        <div class="flex-col" style="flex:1;">
+            <label>Quantidade:</label>
+            <input type="number" class="qtd-produto-venda" min="1" value="1" required>
+        </div>
+        <button type="button" onclick="removerLinhaVenda(this)" class="btn btn-danger">✕</button>
+    `;
+    lista.appendChild(div);
+   
+    preencherSelectsVenda();
+}
+
+function removerLinhaVenda(btn) {
+    const linhas = document.querySelectorAll('.item-venda-linha');
+    if (linhas.length > 1) {
+        btn.closest('.item-venda-linha').remove();
+    } else {
+        alert('A venda precisa ter pelo menos 1 produto!');
+    }
+}
+
+async function salvarVenda(event) {
+    event.preventDefault();
+    const linhas = document.querySelectorAll('.item-venda-linha');
+    const itens = [];
+    let valido = true;
+
+    linhas.forEach(linha => {
+        const produto_id = linha.querySelector('.select-produto-venda').value;
+        const quantidade  = parseInt(linha.querySelector('.qtd-produto-venda').value);
+        if (!produto_id || !quantidade || quantidade < 1) { valido = false; return; }
+        itens.push({ produto_id: parseInt(produto_id), quantidade });
+    });
+
+    if (!valido || itens.length === 0) {
+        alert('Preencha todos os produtos e quantidades corretamente.');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/vendas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itens })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'Erro ao registrar venda.');
+
+        alert(`✅ Venda registrada! Total: ${fmtMoeda(data.valor_total)}`);
+        document.getElementById('formVenda').reset();
+        
+        const todas = document.querySelectorAll('.item-venda-linha');
+        todas.forEach((l, i) => { if (i > 0) l.remove(); });
+        carregarDadosDashboard();
+        carregarProdutos(); 
+        carregarDadosCaixa();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+// PRODUTOS (VELAS)
+
+let _produtoEditandoId = null;
+
+async function carregarProdutos() {
+    try {
+        const res = await fetch('/api/produtos');
+        if (!res.ok) throw new Error();
+        const produtos = await res.json();
+
+        const tblProd = document.getElementById('tabelaProdutosCompleta');
+        if (tblProd) {
+            tblProd.innerHTML = produtos.length === 0
+                ? `<tr><td colspan="5" style="color:#999;">Nenhuma vela cadastrada.</td></tr>`
+                : produtos.map(p => `
+                    <tr>
+                        <td><strong>${p.nome}</strong></td>
+                        <td>${fmtMoeda(p.preco_venda)}</td>
+                        <td class="tag-verde" id="custo-prod-${p.id}">calculando...</td>
+                        <td>${p.quantidade_pronta || 0} un.</td>
+                        <td>
+                            <button class="btn btn-secondary" onclick="editarProduto(${p.id})" style="padding:5px 10px; font-size:0.8rem;"><i data-lucide="pencil"></i> Editar</button>
+                            <button class="btn btn-danger" onclick="removerVela(${p.id})" style="padding:5px 10px; font-size:0.8rem; margin-left:5px;"><i data-lucide="trash-2"></i> Remover</button>
+                        </td>
+                    </tr>
+                `).join('');
+                produtos.forEach(async p => {
+    try {
+        const r = await fetch(`/api/produtos/${p.id}/custo`);
+        if (!r.ok) return;
+        const d = await r.json();
+        const td = document.getElementById(`custo-prod-${p.id}`);
+        if (td) td.innerText = fmtMoeda(d.custo);
+    } catch {}
+});
+        }
+
+        const tblEst = document.getElementById('tabelaEstoqueVelasProntas');
+        if (tblEst) {
+            tblEst.innerHTML = produtos.length === 0
+                ? `<tr><td colspan="3" style="color:#999;">Nenhuma vela pronta.</td></tr>`
+                : produtos.map(p => `
+                    <tr>
+                        <td><strong>${p.nome}</strong></td>
+                        <td>${fmtMoeda(p.preco_venda)}</td>
+                        <td>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input type="number" id="qtd_${p.id}" value="${p.quantidade_pronta || 0}" style="width:70px; padding:6px; border:1px solid #ccc; border-radius:4px; text-align:center;">
+                                <button class="btn btn-success" onclick="atualizarQtdEstoque(${p.id})" style="padding:6px 10px; font-size:0.8rem;"><i data-lucide="save"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        preencherSelectsVenda(produtos);
+        const selProd = document.getElementById('produtoSelect');
+        const selRec  = document.getElementById('receitaProdutoSelect');
+        const opts = '<option value="">-- Selecione uma Vela --</option>' + produtos.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+        if (selProd) selProd.innerHTML = opts;
+        if (selRec)  selRec.innerHTML  = opts;
+
+    } catch (err) {
+        console.error('Erro ao carregar produtos:', err);
+    }
+}
+
+function preencherSelectsVenda(produtos) {
+    if (!produtos) {
+        fetch('/api/produtos').then(r => r.json()).then(lista => preencherSelectsVenda(lista)).catch(() => {});
+        return;
+    }
+    document.querySelectorAll('.select-produto-venda').forEach(sel => {
+        sel.innerHTML = '<option value="">-- Selecione a Vela --</option>' +
+            produtos.map(p => `<option value="${p.id}">${p.nome} (${fmtMoeda(p.preco_venda)})</option>`).join('');
+    });
+}
+
+async function salvarProduto(event) {
+    event.preventDefault();
+    const id          = document.getElementById('produtoId').value || null;
+    const nome        = document.getElementById('produtoNome').value.trim();
+    const preco_venda = parseFloat(document.getElementById('produtoPrecoVenda').value);
+
+    if (!nome || !preco_venda) return alert('Preencha todos os campos.');
+
+    const url    = id ? `/api/produtos/${id}` : '/api/produtos';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, preco_venda })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'Erro ao salvar.');
+        alert(id ? '✅ Vela atualizada!' : '✅ Vela cadastrada!');
+        resetarFormProduto();
+        carregarProdutos();
+        lucide.createIcons();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+async function editarProduto(id) {
+    try {
+        const res = await fetch(`/api/produtos/${id}`);
+        if (!res.ok) throw new Error('Vela não encontrada.');
+        const v = await res.json();
+        document.getElementById('produtoId').value       = v.id;
+        document.getElementById('produtoNome').value     = v.nome;
+        document.getElementById('produtoPrecoVenda').value = parseFloat(v.preco_venda).toFixed(2);
+        document.getElementById('tituloFormProduto').innerText = `><i data-lucide="pencil"></i> Editando: ${v.nome}`;
+        document.querySelector('#aba-produtos').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+function resetarFormProduto() {
+    document.getElementById('produtoId').value = '';
+    document.getElementById('formProduto').reset();
+    document.getElementById('tituloFormProduto').innerText = '🕯️ Cadastrar Nova Vela';
+}
+
+async function removerVela(id) {
+    if (!confirm('Tem certeza que deseja remover esta vela?')) return;
+    try {
+        const res = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'Erro ao remover.');
+        alert('✅ Vela removida!');
+        carregarProdutos();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+async function atualizarQtdEstoque(id) {
+    const qtd = parseInt(document.getElementById(`qtd_${id}`).value);
+    if (!confirm('Confirmar atualização de estoque?')) return;
+    try {
+        const res = await fetch(`/api/produtos/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantidade_pronta: qtd })
+        });
+        if (!res.ok) throw new Error('Erro ao atualizar.');
+        alert('✅ Estoque atualizado!');
+        carregarProdutos();
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+// RECEITAS
+
+async function carregarItensReceita() {
+    const produto_id = document.getElementById('receitaProdutoSelect').value;
+    const lista      = document.getElementById('listaInsumosDaReceita');
+
+    if (!produto_id) {
+        lista.innerHTML = `<li style="color:#999; font-style:italic; border:none !important; background:transparent !important;">Selecione uma vela acima...</li>`;
+        return;
+    }
+
+    try {
+        const [resReceita, resInsumos] = await Promise.all([
+            fetch(`/api/receitas/${produto_id}`),
+            fetch('/api/estoque')
+        ]);
+        if (!resReceita.ok) throw new Error();
+        const itens   = await resReceita.json();
+        const insumos = resInsumos.ok ? await resInsumos.json() : [];
+
+        const unidadeMap = {};
+        insumos.forEach(ins => { unidadeMap[ins.nome] = ins.unidade_medida || ''; });
+
+        if (itens.length === 0) {
+            lista.innerHTML = `<li style="color:#d32f2f; border:none !important; background:transparent !important;">Nenhum insumo na receita ainda.</li>`;
+            return;
+        }
+
+        lista.innerHTML = itens.map(item => {
+            const unidade = unidadeMap[item.insumo_nome] || item.unidade_medida || '';
+            return `
+            <li>
+                <span>
+                    <strong>${item.insumo_nome}</strong>
+                    — <span id="span-qtd-receita-${item.id}">${parseFloat(item.quantidade_necessaria)}</span> ${unidade} por vela
+                </span>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <input type="number" id="edit-qtd-receita-${item.id}"
+                        value="${parseFloat(item.quantidade_necessaria)}"
+                        step="0.01" min="0"
+                        style="width:70px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:0.85rem; display:none;">
+                    <button type="button" id="btn-edit-receita-${item.id}"
+                        onclick="toggleEditarQtdReceita(${item.id})"
+                        style="background:none; border:1px solid #8c7365; color:#8c7365; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem;">
+                        Editar
+                    </button>
+                    <button type="button" id="btn-salvar-receita-${item.id}"
+                        onclick="salvarQtdReceita(${item.id}, ${produto_id}, '${item.insumo_nome}')"
+                        style="background:#2e7d32; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:0.8rem; display:none;">
+                        Salvar
+                    </button>
+                    <button type="button" onclick="removerInsumoDaReceita(${item.id})"
+                        style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:1rem; padding:2px 4px;">
+                        ✕
+                    </button>
+                </div>
+            </li>`;
+        }).join('');
+    } catch (err) {
+        lista.innerHTML = `<li style="color:#999;">Erro ao carregar receita.</li>`;
+    }
+}
+
+function toggleEditarQtdReceita(id) {
+    const input   = document.getElementById(`edit-qtd-receita-${id}`);
+    const btnEdit = document.getElementById(`btn-edit-receita-${id}`);
+    const btnSalv = document.getElementById(`btn-salvar-receita-${id}`);
+    const span    = document.getElementById(`span-qtd-receita-${id}`);
+    const editando = input.style.display === 'none';
+    input.style.display   = editando ? 'block' : 'none';
+    btnSalv.style.display = editando ? 'inline-block' : 'none';
+    btnEdit.style.display = editando ? 'none' : 'inline-block';
+    span.style.display    = editando ? 'none' : 'inline';
+}
+
+async function salvarQtdReceita(id, produto_id, insumo_nome) {
+    const novaQtd = parseFloat(document.getElementById(`edit-qtd-receita-${id}`).value);
+    if (!novaQtd || novaQtd <= 0) return alert('Quantidade inválida.');
+    try {
+        const res = await fetch('/api/receitas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ produto_id, insumo_nome, quantidade_necessaria: novaQtd })
+        });
+        if (!res.ok) throw new Error('Erro ao atualizar quantidade.');
+        carregarItensReceita();
+        carregarProdutos();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+async function salvarReceita(event) {
+    event.preventDefault();
+    const produto_id           = document.getElementById('receitaProdutoSelect').value;
+    const insumo_nome          = document.getElementById('receitaInsumoSelect').value;
+    const quantidade_necessaria = document.getElementById('receitaQuantidade').value;
+
+    if (!produto_id) return alert('Selecione uma vela primeiro!');
+
+    try {
+        const res = await fetch('/api/receitas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ produto_id, insumo_nome, quantidade_necessaria })
+        });
+        if (!res.ok) throw new Error('Erro ao salvar ingrediente.');
+        document.getElementById('receitaInsumoSelect').value  = '';
+        document.getElementById('receitaQuantidade').value    = '';
+        carregarItensReceita();
+        carregarProdutos();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+async function removerInsumoDaReceita(id) {
+    if (!confirm('Remover este insumo da receita?')) return;
+    try {
+        const res = await fetch(`/api/receitas/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        carregarItensReceita();
+        carregarProdutos();
+    } catch (err) {
+        alert('Erro ao remover ingrediente.');
+    }
+}
+
+// PRODUÇÃO
+
+async function lancarProducao(event) {
+    event.preventDefault();
+    const produto_id          = document.getElementById('produtoSelect').value;
+    const quantidade_produzida = parseInt(document.getElementById('quantidadeProducao').value);
+
+    try {
+        const res = await fetch('/api/producao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ produto_id, quantidade_produzida })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'Erro na produção.');
+        alert(`✅ Produção registrada!\nCusto unitário: ${fmtMoeda(data.detalhes.custo_unitario_por_vela)}\nCusto total do lote: ${fmtMoeda(data.detalhes.custo_total_lote)}`);
+        document.getElementById('producaoForm').reset();
+        carregarProdutos();
+        carregarInsumos();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+// INSUMOS
+
+async function carregarInsumos() {
+    try {
+        const res = await fetch('/api/estoque');
+        if (!res.ok) throw new Error();
+        const insumos = await res.json();
+
+        const tbl = document.getElementById('tabelaInsumosCompleta');
+        if (tbl) {
+            tbl.innerHTML = insumos.length === 0
+                ? `<tr><td colspan="4" style="color:#999;">Nenhum insumo cadastrado.</td></tr>`
+                : insumos.map(ins => `
+                    <tr>
+                        <td><strong>${ins.nome}</strong></td>
+                        <td>${parseFloat(ins.quantidade_atual)} ${exibirUnidade(ins.unidade_medida)}</td>
+                        <td>${exibirPreco(ins.custo_unitario, ins.unidade_medida)}</td>
+                        <td>
+                            <button class="btn btn-secondary" onclick="editarInsumo(${ins.id})" style="padding:5px 10px; font-size:0.8rem;"><i data-lucide="pencil"></i> Editar</button>
+                            <button class="btn btn-danger" onclick="excluirInsumo(${ins.id})" style="padding:5px 10px; font-size:0.8rem; margin-left:5px;"><i data-lucide="trash-2"></i> Excluir</button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        const selIns = document.getElementById('receitaInsumoSelect');
+        if (selIns) {
+            selIns.innerHTML = '<option value="">-- Escolha o Insumo --</option>' +
+                insumos.map(ins => `<option value="${ins.nome}">${ins.nome}</option>`).join('');
+        }
+         const selInsumo = document.getElementById('receitaInsumoSelect');
+        if (selInsumo) {
+            selInsumo.innerHTML = '<option value="">-- Escolha --</option>' +
+                insumos.map(i => `<option value="${i.nome}">${i.nome}</option>`).join('');
+        }
+        lucide.createIcons();
+    } catch (err) {
+        console.error('Erro ao carregar insumos:', err);
+    }
+}
+
+async function salvarInsumoNovo(event) {
+    event.preventDefault();
+
+    const id             = document.getElementById('insumoId').value || null;
+    const nome           = document.getElementById('insumoNome').value.trim();
+    let quantidade       = parseFloat(document.getElementById('insumoQuantidade').value);
+    let unidade_medida   = document.getElementById('insumoUnidade').value;
+    let custo_unitario   = parseFloat(document.getElementById('insumoPreco').value);
+
+    if (!nome || !quantidade || !custo_unitario) return alert('Preencha todos os campos.');
+
+    const nomeOriginal = document.getElementById('insumoNomeOriginal').value;
+    const editando = !!nomeOriginal;
+
+   if (unidade_medida === 'kg') {
+        quantidade     = quantidade * 1000;
+        custo_unitario = custo_unitario / 1000;
+        unidade_medida = 'g';
+    } else if (unidade_medida === 'g' && editando) {
+        custo_unitario = custo_unitario / 1000;
+    } else if (!editando) {
+        custo_unitario = custo_unitario / quantidade;
+    }
+
+    const dados = {
+        nome,
+        quantidade,
+        preco: custo_unitario,
+        unidade_medida,
+        codigo: 'INS-' + Date.now()
+    };
+
+   const url    = editando ? `/api/estoque/editar/${encodeURIComponent(nomeOriginal)}` : '/api/estoque';
+   const method = editando ? 'PUT' : 'POST';
+
+   const body = editando
+    ? { nome, quantidade: quantidade, preco: custo_unitario, unidade_medida }
+    : dados;
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'Erro ao salvar.');
+        alert(id ? '✅ Insumo atualizado!' : '✅ Insumo cadastrado!');
+        resetarFormInsumo();
+        carregarInsumos();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+async function editarInsumo(id) {
+    try {
+        const res = await fetch(`/api/estoque/${id}`);
+        if (!res.ok) throw new Error('Insumo não encontrado.');
+        const ins = await res.json();
+
+        let precoExibido = parseFloat(ins.custo_unitario);
+        if (ins.unidade_medida === 'g') precoExibido = precoExibido * 1000;
+
+        document.getElementById('insumoId').value          = '';
+        document.getElementById('insumoNomeOriginal').value = ins.nome;
+        document.getElementById('insumoNome').value         = ins.nome;
+        document.getElementById('insumoQuantidade').value   = parseFloat(ins.quantidade_atual);
+        document.getElementById('insumoUnidade').value = ins.unidade_medida === 'g' ? 'kg' : ins.unidade_medida;
+        document.getElementById('insumoPreco').value        = precoExibido.toFixed(2);
+        document.querySelector('label[for="insumoPreco"]').innerText = 'Preço Unitário (R$):';
+        document.getElementById('tituloFormInsumo').innerText = `Editando: ${ins.nome}`;
+        document.getElementById('aba-estoque').querySelector('.card:last-child').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+        alert('Erro ao carregar insumo: ' + err.message);
+    }
+}
+function resetarFormInsumo() {
+    document.getElementById('insumoId').value = '';
+    document.getElementById('insumoNomeOriginal').value = '';
+    document.getElementById('insumoForm').reset();
+    document.getElementById('tituloFormInsumo').innerText = 'Cadastrar / Editar Insumo';
+    document.querySelector('label[for="insumoPreco"]').innerText = 'Preço Total Pago (R$):';
+}
+
+async function excluirInsumo(id) {
+    if (!confirm('Deseja mesmo excluir este insumo?')) return;
+    try {
+        const res = await fetch(`/api/insumos/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'Erro ao excluir.');
+        alert('✅ Insumo excluído!');
+        carregarInsumos();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+// CAIXA
+
+async function carregarDadosCaixa() {
+    try {
+        const res = await fetch('/api/dashboard/vendas');
+        if (!res.ok) throw new Error();
+        const d = await res.json();
+
+        document.getElementById('caixaFaturamentoGeral').innerText = fmtMoeda(d.geral);
+        document.getElementById('caixaFaturamento30').innerText    = fmtMoeda(d.ultimos30);
+        document.getElementById('caixaFaturamento15').innerText    = fmtMoeda(d.ultimos15);
+
+        // Top 3
+        const tblTop3 = document.getElementById('tabelaTop3');
+        if (tblTop3) {
+            if (!d.top3 || d.top3.length === 0) {
+                tblTop3.innerHTML = `<tr><td colspan="2" style="color:#999;">Sem dados ainda.</td></tr>`;
+            } else {
+                const medalhas = ['🥇', '🥈', '🥉'];
+                tblTop3.innerHTML = d.top3.map((item, i) => `
+                    <tr>
+                        <td>${medalhas[i] || ''} ${item.nome}</td>
+                        <td style="text-align:right; font-weight:bold;">${item.total_vendido} un.</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Gráfico
+        const fat  = parseFloat(d.faturamentoMes || 0);
+        const desp = parseFloat(d.despesasMes || 0);
+        const ctx  = document.getElementById('graficoCaixa');
+        if (ctx) {
+            if (window._graficoCaixa) window._graficoCaixa.destroy();
+            window._graficoCaixa = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Faturamento', 'Despesas'],
+                    datasets: [{
+                        data: [fat, desp],
+                        backgroundColor: ['#2e7d32', '#dc3545'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: {
+                        callback: v => 'R$ ' + v.toFixed(2).replace('.', ',')
+                    }}}
+                }
+            });
+        }
+
+        carregarDespesas();
+    } catch (err) {
+        console.error('Erro ao carregar dados de caixa:', err);
+    }
+}
+
+async function carregarDespesas() {
+    try {
+        const res = await fetch('/api/despesas');
+        if (!res.ok) throw new Error();
+        const despesas = await res.json();
+
+        const tbl = document.getElementById('tabelaDespesas');
+        if (!tbl) return;
+
+        if (despesas.length === 0) {
+            tbl.innerHTML = `<tr><td colspan="4" style="color:#999;">Nenhuma despesa registrada este mês.</td></tr>`;
+        } else {
+            tbl.innerHTML = despesas.map(d => `
+                <tr>
+                   <td>${new Date(d.data_despesa).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
+                    <td>${d.descricao}</td>
+                    <td class="tag-vermelho">${fmtMoeda(d.valor)}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="excluirDespesa(${d.id})" style="padding:4px 8px; font-size:0.8rem;"><i data-lucide="trash-2"></i> Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        lucide.createIcons();
+    } catch (err) {
+        console.error('Erro ao carregar despesas:', err);
+    }
+}
+
+async function salvarDespesa(event) {
+    event.preventDefault();
+    const descricao    = document.getElementById('despesaDescricao').value.trim();
+    const valor        = parseFloat(document.getElementById('despesaValor').value);
+    const data_despesa = document.getElementById('despesaData').value;
+
+    if (!descricao || !valor || !data_despesa) return alert('Preencha todos os campos.');
+
+    try {
+        const res = await fetch('/api/despesas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ descricao, valor, data_despesa })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || 'Erro ao salvar.');
+        alert('✅ Despesa registrada!');
+        document.getElementById('formDespesa').reset();
+        carregarDespesas();
+        carregarDadosCaixa();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+async function excluirDespesa(id) {
+    if (!confirm('Remover esta despesa?')) return;
+    try {
+        const res = await fetch(`/api/despesas/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        carregarDespesas();
+    } catch (err) {
+        alert('Erro ao excluir despesa.');
+    }
+}
+async function excluirVenda(id) {
+    if (!confirm('Excluir esta venda? O estoque será restaurado.')) return;
+    try {
+        const res = await fetch(`/api/vendas/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro);
+        carregarDadosDashboard();
+        carregarProdutos();
+        carregarDadosCaixa();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
+
+
+// INICIALIZAÇÃO
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Define data de hoje no campo de despesa por padrão
+    const hoje = new Date().toISOString().split('T')[0];
+    const campoDt = document.getElementById('despesaData');
+    if (campoDt) campoDt.value = hoje;
+
+    carregarProdutos();
+    carregarInsumos();
+    carregarDadosDashboard();
+});
+
+</script>
+</body>
+</html>
